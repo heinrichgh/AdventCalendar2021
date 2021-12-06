@@ -29,4 +29,31 @@ let epsilonRate = majorityBits
                 |> String.concat ""
                 |> convertBinaryToInteger                 
 
-let part1 = gammaRate * epsilonRate;
+let part1 = gammaRate * epsilonRate
+
+let majorityCheckOxygenGenerator total length = if total >= (length / 2.0) then 1 else 0
+let majorityCheckCO2Scrubber total length = if total >= (length / 2.0) then 0 else 1
+
+let rec parseDiagnostics index (majorityChecker:float->float->int) (diagnostics: int[][]) =
+    let headBitTotal = diagnostics
+                    |> Array.sumBy (fun binaries -> binaries[index])
+    let bitToMatch = majorityChecker headBitTotal diagnostics.Length
+    let remainingDiagnostics = diagnostics
+                            |> Array.filter (fun binaries -> binaries[index] = bitToMatch)
+                            
+    match remainingDiagnostics.Length with
+    | 1 -> remainingDiagnostics
+    | _ -> remainingDiagnostics |> parseDiagnostics (index+1) majorityChecker
+
+let oxygenGeneratorRating = parseDiagnostics 0 majorityCheckOxygenGenerator diagnosticReport
+                            |> Array.head
+                            |> Array.map string
+                            |> String.concat ""
+                            |> convertBinaryToInteger
+                            
+let co2ScrubberRating = parseDiagnostics 0 majorityCheckCO2Scrubber diagnosticReport
+                            |> Array.head
+                            |> Array.map string
+                            |> String.concat ""
+                            |> convertBinaryToInteger         
+let part2 = oxygenGeneratorRating * co2ScrubberRating
