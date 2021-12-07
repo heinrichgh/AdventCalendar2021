@@ -18,7 +18,7 @@ let lineInputToLine (line:string) =
     let lineParts = line.Split(" -> ", StringSplitOptions.RemoveEmptyEntries)
                     |> Array.map (fun linePart -> linePart.Split "," |> Array.map int)       
     {Point1 = {X = lineParts[0][0]; Y = lineParts[0][1]}; Point2 = {X = lineParts[1][0]; Y = lineParts[1][1]}}
-let lines = System.IO.File.ReadLines("Day5/test.txt")
+let lines = System.IO.File.ReadLines("Day5/input.txt")
                     |> Seq.map (lineInputToLine >> orderLinePoints)
                     |> Seq.toArray
 
@@ -59,14 +59,14 @@ let isPointOnLine line point =
 
 let getIncrementalPoints startPoint endPoint =
     if startPoint = endPoint then [|startPoint|]
-    else
-    let slope = float (endPoint.Y - startPoint.Y)/float (endPoint.X - startPoint.X)
-    match slope with
-    | infinity when Double.IsInfinity infinity -> [|startPoint.Y..endPoint.Y|]
-                                                  |> Array.map (fun y -> {X = startPoint.X; Y = y})
-    | _ -> [|startPoint.X..endPoint.X|]
-            |> Array.indexed
-            |> Array.map (fun (i, x) -> {X = x; Y = Convert.ToInt32(float startPoint.Y + (float i)*slope)})    
+    else    
+    match endPoint.X - startPoint.X with
+    | 0 -> [|startPoint.Y..endPoint.Y|]
+            |> Array.map (fun y -> {X = startPoint.X; Y = y})
+    | divisor -> let slope = (endPoint.Y - startPoint.Y)/divisor
+                 [|startPoint.X..endPoint.X|]
+                    |> Array.indexed
+                    |> Array.map (fun (i, x) -> {X = x; Y = startPoint.Y + i*slope})    
     
 
 let getOverlappingLinePoints line1 line2 =
@@ -82,6 +82,12 @@ let getOverlappingLinePoints line1 line2 =
     else
     if isPointOnLine line1 line2.Point2
     then Some (getIncrementalPoints line1.Point1 line2.Point2)
+    else
+    if isPointOnLine line2 line1.Point1
+    then Some (getIncrementalPoints line1.Point1 line2.Point2)
+    else
+    if isPointOnLine line2 line1.Point2
+    then Some (getIncrementalPoints line2.Point1 line1.Point2)
     else None    
     
 let checkAndGetIntersection (line1,line2) =
@@ -119,13 +125,19 @@ let rec customPairing (list:'a list) =
                         
     
 //let result = customPairing [1;2;3;4;5]
-let result = customPairing (horizontalAndVerticalLines |> Array.toList)
-            |> List.toArray
-            |> Array.map (fun pair -> (checkAndGetIntersection pair, pair))
+//let result = customPairing (horizontalAndVerticalLines |> Array.toList)
+//            |> List.toArray
+//            |> Array.map (fun pair -> (checkAndGetIntersection pair, pair))
             
 //let r = getIncrementalPoints {X = 2; Y = 2} {X = 4; Y = 8}
 //let r = getIntersectionPoint {Point1 = {X = 2; Y = 2}; Point2 = {X = 4; Y = 4}} {Point1 = {X = 2; Y = 4}; Point2 = {X = 4; Y = 2}} 
 //let r = checkAndGetIntersection ({Point1 = {X = 2; Y = 2}; Point2 = {X = 4; Y = 4}}, {Point1 = {X = 2; Y = 4}; Point2 = {X = 4; Y = 2}}) 
-//let r = checkAndGetIntersection ({Point1 = {X = 2; Y = 1}; Point2 = {X = 2; Y = 4}}, {Point1 = {X = 2; Y = 2}; Point2 = {X = 2; Y = 8}}) 
-let part1 = result
+
+let part1 = customPairing (horizontalAndVerticalLines |> Array.toList)
+            |> List.toArray
+            |> Array.map checkAndGetIntersection
+            |> Array.choose id
+            |> Array.collect id
+            |> Array.distinct
+            |> Array.length
             
