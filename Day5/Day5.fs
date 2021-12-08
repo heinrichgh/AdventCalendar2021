@@ -35,13 +35,24 @@ let getIncrementalPoints startPoint endPoint =
                     |> Array.indexed
                     |> Array.map (fun (i, x) -> {X = x; Y = startPoint.Y + i*slope})
                     
-let points = horizontalAndVerticalLines
+let horizontalAndVerticalPoints = horizontalAndVerticalLines
+                                 |> Array.map (fun {Point1 = startPoint; Point2 = endPoint} -> getIncrementalPoints startPoint endPoint)
+                                 |> Array.collect id
+             
+let horizontalAndVerticalGroupedPoints = horizontalAndVerticalPoints
+                                        |> Array.groupBy id
+                    
+let part1 = horizontalAndVerticalGroupedPoints
+            |> Array.filter (fun (_, list) -> list.Length > 1)
+            |> Array.length
+            
+let points = lines
              |> Array.map (fun {Point1 = startPoint; Point2 = endPoint} -> getIncrementalPoints startPoint endPoint)
              |> Array.collect id
              
 let groupedPoints = points
                     |> Array.groupBy id
                     
-let part1 = groupedPoints
+let part2 = groupedPoints
             |> Array.filter (fun (_, list) -> list.Length > 1)
             |> Array.length
