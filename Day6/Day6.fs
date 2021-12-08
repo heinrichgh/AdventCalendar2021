@@ -25,7 +25,7 @@ let rec cycleDays daysLeft fishTimers =
     
 let part1 = (cycleDays 80 startingFishTimers) |> Array.length
     
-let cache = new Dictionary<uint64*uint64, uint64>();
+let newBornCache = new Dictionary<uint64, uint64>();
     
 let rec countDescendants daysLeft fishTimer =
 //    printfn $"DaysLeft: {daysLeft}, FishTimer: {fishTimer}"
@@ -37,8 +37,8 @@ let rec countDescendants daysLeft fishTimer =
     ([|0UL..(directFishChildrenCount-1UL)|]
     |> Array.map (fun i ->
             let newDaysLeft = (firstChildDaysLeft - (7UL*i))
-            let descendantCount = if cache.ContainsKey (newDaysLeft, 8UL) then cache[(newDaysLeft, 8UL)] else countDescendants newDaysLeft 8UL
-            cache[(newDaysLeft, 8UL)] <- descendantCount
+            let descendantCount = if newBornCache.ContainsKey newDaysLeft then newBornCache[newDaysLeft] else countDescendants newDaysLeft 8UL
+            newBornCache[newDaysLeft] <- descendantCount
             descendantCount)
     |> Array.sum)
     + directFishChildrenCount
