@@ -16,5 +16,8 @@ open AdventCalendar2021
 //printfn "%A" Day5.part1   
 //printfn "%A" Day5.part2
 
-//printfn "%A" Day6.part1   
-printfn "%A" Day6.part2   
+//printfn "%A" Day6.part1
+//printfn "%A" Day6.part2
+
+//printfn "%A" Day7.part1   
+printfn "%A" Day7.part2   
