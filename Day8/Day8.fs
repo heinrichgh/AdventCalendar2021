@@ -2,7 +2,7 @@
 
 open System
 
-let lines = System.IO.File.ReadLines("Day8/test.txt")
+let lines = System.IO.File.ReadLines("Day8/input.txt")
                     |> Seq.toArray
                     
 let fourDigitSegments = lines |> Array.map (fun line -> ((line.Split "|")[1]).Split(" ", StringSplitOptions.RemoveEmptyEntries))
@@ -15,7 +15,7 @@ let part1 = fourDigitSegments
             
 type Display = {SignalPattern: Set<char>[]; FourDigitSignalValue: Set<char>[]}
 
-let rec convertToSetOfCharacters (signalPatternString:string) =
+let convertToSetOfCharacters (signalPatternString:string) =
         signalPatternString.Split(" ", StringSplitOptions.RemoveEmptyEntries)
         |> Array.map (fun string -> string.ToCharArray() |> Set.ofArray)
 
@@ -56,20 +56,24 @@ let twoSegments (signalPatterns:Set<char>[]) fiveSegments oneSegments =
     
 let threeSegments (signalPatterns:Set<char>[]) fiveSegments twoSegments =
     signalPatterns |> Array.filter (fun pattern -> Set.count pattern = 5 && pattern <> fiveSegments && pattern <> twoSegments) |> Array.head
+            
+let decodeDisplay display =
+    let one = (oneSegments display.SignalPattern, 1)
+    let four = (fourSegments display.SignalPattern, 4)
+    let seven = (sevenSegments display.SignalPattern, 7)
+    let eight = (eightSegments display.SignalPattern, 8)
+    let nine = (nineSegments display.SignalPattern (fst seven) (fst four) (fst eight), 9)
+    let five = (fiveSegments display.SignalPattern (fst four) (fst one), 5)
+    let six = (sixSegments display.SignalPattern (fst four) (fst one) (fst nine), 6)
+    let zero = (zeroSegments display.SignalPattern (fst six) (fst nine), 0)
+    let two = (twoSegments display.SignalPattern (fst five) (fst one), 2)
+    let three = (threeSegments display.SignalPattern (fst five) (fst two), 3)
 
-let test = { SignalPattern = convertToSetOfCharacters "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab"; FourDigitSignalValue = convertToSetOfCharacters "cdfeb fcadb cdfeb cdbaf"}             
-
-let one = (oneSegments test.SignalPattern, 1)
-let four = (fourSegments test.SignalPattern, 4)
-let seven = (sevenSegments test.SignalPattern, 7)
-let eight = (eightSegments test.SignalPattern, 8)
-let nine = (nineSegments test.SignalPattern (fst seven) (fst four) (fst eight), 9 )
-let five = (fiveSegments test.SignalPattern (fst four) (fst one), 5 )
-let six = (sixSegments test.SignalPattern (fst four) (fst one) (fst nine), 6 )
-let zero = (zeroSegments test.SignalPattern (fst six) (fst nine), 0 )
-let two = (twoSegments test.SignalPattern (fst five) (fst one), 2 )
-let three = (threeSegments test.SignalPattern (fst five) (fst two), 3 )
-
-let lookup = [|one; four; seven; eight; nine; five; six; zero; two; three|]
-            |> Map.ofArray
-let part2 = String.Join("", test.FourDigitSignalValue |> Array.map (fun set -> lookup[set])) |> int
+    let lookup = [|one; four; seven; eight; nine; five; six; zero; two; three|]
+                |> Map.ofArray
+                
+    String.Join("", display.FourDigitSignalValue |> Array.map (fun set -> lookup[set])) |> int
+            
+let part2 = displays
+            |> Array.map decodeDisplay
+            |> Array.sum
