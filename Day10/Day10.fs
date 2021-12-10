@@ -1,9 +1,8 @@
 ﻿module AdventCalendar2021.Day10
 
 open System
-open AdventCalendar2021.Day5
 
-type OkResult = Complete | Incomplete
+type OkResult = Complete | Incomplete of char list
 
 let lines = System.IO.File.ReadLines("Day10/input.txt")
             |> Seq.map Seq.toList
@@ -34,7 +33,7 @@ let rec findCorruptedCharacter line (currentOpenCharacters:char list) =
     then Ok Complete
     else
     if List.isEmpty currentOpenCharacters
-    then Ok Incomplete
+    then startFindingCorruptedCharacter line
     else
     let currentOpenCharacter = currentOpenCharacters.Head
     if not (isOpeningCharacter currentOpenCharacter)
@@ -48,9 +47,8 @@ let rec findCorruptedCharacter line (currentOpenCharacters:char list) =
                     if chunkPairs[currentOpenCharacter] = head
                     then findCorruptedCharacter tail currentOpenCharacters.Tail
                     else Error head
-    | _ -> Ok Incomplete
-    
-let startFindingCorruptedCharacter (line:char list) =
+    | _ -> Ok (Incomplete currentOpenCharacters)  
+and startFindingCorruptedCharacter (line:char list) =
     findCorruptedCharacter line.Tail (List.take 1 line)
                     
 //let part1 = startFindingCorruptedCharacter ("]]()" |> Seq.toList)                     
@@ -66,4 +64,29 @@ let part1 = lines
                                             | _ -> raise (Exception("Filter did not filter properly")))
                          >> (fun corruptedBrace -> scoreLookup[corruptedBrace]))
             |> Array.sum
-            
+  
+let completionScoreLookup =
+        [
+            (')', 1UL)
+            (']', 2UL)
+            ('}', 3UL)
+            ('>', 4UL)
+        ]        
+        |> Map.ofList  
+  
+let calculateCompleteScore openingBrackets =
+    openingBrackets
+    |> List.fold (fun acc openingBracket -> acc*5UL + completionScoreLookup[chunkPairs[openingBracket]]) 0UL
+    
+let scores = lines
+            |> Array.map (fun line -> startFindingCorruptedCharacter line)
+            |> Array.filter (fun result -> match result with
+                                            | Ok (Incomplete _) -> true
+                                            | Error _ -> false)
+            |> Array.map ((fun result -> match result with
+                                            | Ok (Incomplete x) -> x
+                                            | _ -> raise (Exception("Filter did not filter properly")))
+                         >> calculateCompleteScore)
+            |> Array.sort
+
+let part2 = scores[scores.Length / 2]            
