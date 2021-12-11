@@ -76,3 +76,17 @@ let rec takeStep stepCount energyMap flashCount=
     takeStep (stepCount-1) nextEnergyMap (flashCount+stepFlashCount)
     
 let part1 = takeStep 100 energyMap 0
+
+let rec searchForSync stepCount energyMap =    
+    let increasedEnergyMap = increaseEnergyLevels energyMap
+    let flashedEnergyMap = flashEnergyMap increasedEnergyMap 
+    let stepFlashCount = flashedEnergyMap
+                         |> Array.map (fun row -> row |> Array.filter (fun octopus -> octopus.Flashed) |> Array.length)
+                         |> Array.sum
+    if stepFlashCount = mapWidth * mapWidth
+    then stepCount
+    else
+    let nextEnergyMap = resetEnergyMapFlashes flashedEnergyMap
+    searchForSync (stepCount+1) nextEnergyMap
+    
+let part2 = searchForSync 1 energyMap
