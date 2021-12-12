@@ -39,3 +39,35 @@ let rec getPathsThroughCave currentNode visitedNodes currentNodePath =
 let validPart1Paths = getPathsThroughCave startingNode visitedNodes []
                       |> List.choose id
 let part1 = validPart1Paths |> List.length
+
+let rec getPathsThroughCaveSpecial currentNode visitedNodes currentNodePath specialNode haveSpecialNodeBeenVisited =
+    let unvisitedConnectedNodes = Set.difference nodeMap[currentNode] visitedNodes
+    if unvisitedConnectedNodes.IsEmpty
+    then [None]
+    else
+    let updatedVisitedNodes =
+        if currentNode.LargeCave || (currentNode = specialNode && not haveSpecialNodeBeenVisited)
+        then visitedNodes
+        else visitedNodes.Add currentNode
+    let updateSpecialNodeVisit = haveSpecialNodeBeenVisited || currentNode = specialNode
+    let updatedNodePath = currentNode::currentNodePath
+    if currentNode = endNode
+    then [Some updatedNodePath]
+    else 
+    unvisitedConnectedNodes
+    |> Set.toList
+    |> List.map (fun node -> getPathsThroughCaveSpecial node updatedVisitedNodes updatedNodePath specialNode updateSpecialNodeVisit)
+    |> List.collect id
+    
+
+let validPart2Paths =
+                      nodeMap.Keys
+                      |> Seq.filter (fun node -> not node.LargeCave)
+                      |> Seq.distinct
+                      |> Seq.map (fun node -> 
+                                            getPathsThroughCaveSpecial startingNode visitedNodes [] node false
+                                            |> List.choose id
+                                  )
+                      |> Seq.collect id
+                      |> Seq.distinct
+let part2 = validPart2Paths |> Seq.length
