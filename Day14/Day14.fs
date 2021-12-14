@@ -1,8 +1,9 @@
 ﻿module AdventCalendar2021.Day14
 
+open System.Collections.Generic
 open System.Text.RegularExpressions
 
-let input = System.IO.File.ReadLines("Day14/input.txt") |> Seq.toList
+let input = System.IO.File.ReadLines("Day14/test.txt") |> Seq.toList
 
 let template = input.Head
 
@@ -15,7 +16,6 @@ let rules = List.skip 2 input
             |> Map.ofList
 
 let rec runPolymerInsertionCycle stepCount (template:string) =
-    printfn "%A" (stepCount, template.Length)
     if stepCount = 0
     then template
     else
@@ -37,11 +37,47 @@ let polymerCounts = polymerResult
 
 let part1 = (Seq.max polymerCounts) - (Seq.min polymerCounts)
 
+let rulesForFaster = List.skip 2 input
+                    |> List.map (fun line ->
+                                        let regexMatch = Regex.Matches(line, "([A-Z])([A-Z]) -> ([A-Z])")                
+                                                        |> Seq.head
+                                        ((regexMatch.Groups[1].ToString(), regexMatch.Groups[2].ToString()), regexMatch.Groups[3].ToString())                                
+                                )
+                    |> Map.ofList
 
-let polymerResultPart2 = runPolymerInsertionCycle 40 template
+let pairExpandCache = new Dictionary<string*string*int, string>();
+
+let rec expandPair stepCount (a,b) endPiece =
+    if stepCount = 0
+    then
+        if endPiece then b else a+b
+//        a+b
+    else
+    if pairExpandCache.ContainsKey (a, b, stepCount)
+    then pairExpandCache[(a, b, stepCount)]
+    else
+    if rulesForFaster.ContainsKey (a,b)
+    then
+        let insertion = rulesForFaster[(a,b)]
+        let result = (expandPair (stepCount - 1) (a, insertion) false) + (expandPair (stepCount - 1) (insertion, b) true)
+        pairExpandCache[(a, b, stepCount)] <- result
+        result
+    else
+        if endPiece then b else a+b
+//        a+b
+    
+let runPolymerInsertionCycleFaster stepCount (template:string[]) =   
+    Array.pairwise template
+     |> Array.map (fun pair ->
+                    expandPair stepCount pair false
+         )
+     |> Array.fold (fun acc curr -> acc + curr) ""
+         
+        
+let polymerResultPart2 = runPolymerInsertionCycleFaster 2 (template |> Seq.toArray |> Array.map (fun c -> c.ToString()))
 let polymerCountsPart2 = polymerResult
                              |> Seq.groupBy id
                              |> Seq.map (fun (_, charList) -> Seq.length charList)
                              
 
-let part2 = (Seq.max polymerCounts) - (Seq.min polymerCounts)
+let part2 = polymerResultPart2
