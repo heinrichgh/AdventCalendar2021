@@ -2,12 +2,14 @@
 
 open System
 
-type PacketType = Literal | Operator
-type Packet = {Version:int; Type:PacketType; Bits:string seq; Value:int option; SubPackets:Packet[] option}
+type Operator = Sum | Product | Minimum | Maximum | GreaterThan | LessThan | EqualTo
+
+type PacketType = Literal | Operator of Operator
+type Packet = {Version:int; Type:PacketType; Bits:string seq; Value:uint64 option; SubPackets:Packet[] option}
 
 let convertHexCharToBinaryString char = Convert.ToString(Convert.ToInt32(char, 16), 2).PadLeft(4, '0')
 
-let line = "8A004A801A8002F478"
+let line =  System.IO.File.ReadAllText("Day16/input.txt") //"8A004A801A8002F478"
             |> Seq.map (Char.ToString >> convertHexCharToBinaryString)
             |> Seq.collect id
             |> Seq.map Char.ToString
@@ -24,7 +26,13 @@ let rec parsePacket packetBits =
     let typeBits = packetBits |> Seq.skip 3 |> Seq.take 3 |> String.concat String.Empty
     let packetType = match Convert.ToInt32(typeBits, 2) with
                      | 4 -> Literal
-                     | _ -> Operator
+                     | 0 -> Operator Sum
+                     | 1 -> Operator Product
+                     | 2 -> Operator Minimum
+                     | 3 -> Operator Maximum
+                     | 5 -> Operator GreaterThan
+                     | 6 -> Operator LessThan
+                     | 7 -> Operator EqualTo
     
     let bits = packetBits |> Seq.skip 6
     if packetType = Literal
@@ -38,7 +46,7 @@ let rec parsePacket packetBits =
          Version = version;
          Type = packetType;
          Bits = bits
-         Value = Some (Convert.ToInt32(getLiteralBits bits, 2));
+         Value = Some (Convert.ToUInt64(getLiteralBits bits, 2));
          SubPackets = None     
          }, bitsLeftOver)
     else
@@ -48,7 +56,7 @@ let rec parsePacket packetBits =
          Type = packetType;
          Bits = bits
          Value = None;
-         SubPackets = subPackets
+         SubPackets = Some (Array.rev subPackets)
          }, bitsLeftOver)
 and  parseOperatorPacket bits =
     let lengthType = Seq.head bits
@@ -59,26 +67,42 @@ and  parseOperatorPacket bits =
     | _ ->
         let length = Convert.ToInt32(bits |> Seq.skip 1 |> Seq.take 15 |> String.concat String.Empty, 2)
         let subPackets = parseOperatorPacketByLength (bits |> Seq.skip 16 |> Seq.take length) []
-        let bitsLeft = bits |> Seq.skip length
+        let bitsLeft = bits |> Seq.skip (length + 16)
         (subPackets, bitsLeft)
 and parseOperatorPacketByNumber bits packets count =
     if count = 0
     then
-        (packets |> List.toArray |> Some, bits)
+        (packets |> List.toArray, bits)
     else
     let (newPacket, bitsLeft) = parsePacket bits    
     parseOperatorPacketByNumber bitsLeft (newPacket::packets) (count-1)
 and parseOperatorPacketByLength bits packets =   
     if Seq.length bits = 0
     then
-        packets |> Seq.toArray |> Some
+        packets |> Seq.toArray
     else
         let (newPacket, bitsLeft) = parsePacket bits    
         parseOperatorPacketByLength bitsLeft (newPacket::packets)  
     
-    
-
-    
-let packetTree =     parsePacket line
+let rec sumPacketVersion packet =
+    match packet.SubPackets with
+    | Some subPackets ->
+        packet.Version +
+        (subPackets |> Array.map sumPacketVersion |> Array.sum)
+    | None -> packet.Version
+let packetTree = fst (parsePacket line)
            
-let part1 = packetTree
+let part1 = sumPacketVersion packetTree
+
+let rec parsePacketExpressionTree packet =    
+    match packet.Type with
+    | Literal -> packet.Value.Value
+    | Operator Sum -> packet.SubPackets.Value |> Array.map parsePacketExpressionTree |> Array.sum
+    | Operator Product -> packet.SubPackets.Value |> Array.map parsePacketExpressionTree |> Array.reduce (fun acc curr -> acc * curr)
+    | Operator Minimum -> packet.SubPackets.Value |> Array.map parsePacketExpressionTree |> Array.min
+    | Operator Maximum -> packet.SubPackets.Value |> Array.map parsePacketExpressionTree |> Array.max
+    | Operator GreaterThan -> if (parsePacketExpressionTree packet.SubPackets.Value[0]) > (parsePacketExpressionTree packet.SubPackets.Value[1]) then 1UL else 0UL
+    | Operator LessThan -> if (parsePacketExpressionTree packet.SubPackets.Value[0]) < (parsePacketExpressionTree packet.SubPackets.Value[1]) then 1UL else 0UL
+    | Operator EqualTo -> if (parsePacketExpressionTree packet.SubPackets.Value[0]) = (parsePacketExpressionTree packet.SubPackets.Value[1]) then 1UL else 0UL   
+
+let part2 = parsePacketExpressionTree packetTree    
