@@ -77,3 +77,6 @@ let decodeDisplay display =
 let part2 = displays
             |> Array.map decodeDisplay
             |> Array.sum
+
+// GOLFIFIED
+//let part1 = System.IO.File.ReadLines("Day8/input.txt")|>Seq.toArray|>Array.map ((fun line -> ((line.Split "|")[1]).Split(" ", StringSplitOptions.RemoveEmptyEntries))>>(fun digits -> digits|>Array.filter (fun digit -> Array.contains digit.Length [|2;3;4;7|])|>Array.length ))|>Array.sum
